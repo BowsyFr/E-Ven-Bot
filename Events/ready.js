@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 const { ActivityType } = Discord;
 const loadSlashCommands = require("../Loaders/loadSlashCommands");
+const { startWebServer } = require("../Web/webServer");
 
 
 module.exports = async client => {
@@ -8,6 +9,7 @@ module.exports = async client => {
         await loadSlashCommands(client);
 
         console.log(`Le bot est en ligne ! ID: ${client.user.tag}`);
+        startWebServer(client);
 
         // Notification initiale
         const channelId = '1430581638856708288';
