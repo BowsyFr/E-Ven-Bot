@@ -2,6 +2,7 @@ const Discord = require('discord.js');
 const { ActivityType } = Discord;
 const loadSlashCommands = require("../Loaders/loadSlashCommands");
 const { startWebServer } = require("../Web/webServer");
+const express = require('express');
 
 
 module.exports = async client => {

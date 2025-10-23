@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Ven Message Composer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📝 E-Ven Message Composer</h1>
+            <p>Créez des messages personnalisés avec embeds, boutons et plus encore</p>
+        </header>
+
+        <div class="composer-layout">
+            <div class="composer-panel">
+                <div class="section">
+                    <h2>📍 Configuration</h2>
+
+                    <div class="form-group">
+                        <label for="channelSelect">Salon de destination</label>
+                        <select id="channelSelect" class="input">
+                            <option value="">Chargement des salons...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💬 Message simple</h2>
+
+                    <div class="form-group">
+                        <label for="messageContent">Contenu du message</label>
+                        <div class="editor-toolbar">
+                            <button type="button" class="toolbar-btn" id="openMentionModalBtn">@ Mentionner</button>
+                            <button type="button" class="toolbar-btn" id="openEmojiModalBtn">😀 Émoji</button>
+                        </div>
+                        <textarea id="messageContent" class="input textarea" placeholder="Tapez votre message ici..." rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Pièce jointe (Image)</label>
+                        <div id="dropArea" class="drop-area">
+                            Glissez-déposez une image ici ou <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                            <label for="fileInput" class="file-label">cliquez pour sélectionner</label>.
+                            <div id="attachmentPreview" class="attachment-preview" style="display: none;">
+                                <span id="attachmentName"></span>
+                                <button type="button" id="removeAttachmentBtn" class="remove-attachment-btn">×</button>
+                            </div>
+                        </div>
+                        <small>Supporte uniquement les images pour les messages simples.</small>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>📋 Embed</h2>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="enableEmbed">
+                        <span>Activer l'embed</span>
+                    </label>
+
+                    <div id="embedOptions" class="embed-options" style="display: none;">
+                        <div class="form-group">
+                            <label for="embedColor">Couleur</label>
+                            <div class="color-picker-group">
+                                <input type="color" id="embedColor" value="#5865F2">
+                                <input type="text" id="embedColorHex" class="input color-hex" value="#5865F2" placeholder="#5865F2">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="embedTitle">Titre</label>
+                            <input type="text" id="embedTitle" class="input" placeholder="Titre de l'embed">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="embedDescription">Description</label>
+                            <textarea id="embedDescription" class="input textarea" placeholder="Description de l'embed" rows="4"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="embedUrl">URL du titre (optionnel)</label>
+                            <input type="url" id="embedUrl" class="input" placeholder="https://example.com">
+                            <div id="embedUrlDropArea" class="drop-area embed-drop-area small-drop-area">
+                                Glissez-déposez une image ou
+                                <input type="file" id="embedUrlFileInput" data-type="url" accept="image/*" style="display: none;">
+                                <label for="embedUrlFileInput" class="file-label">cliquez pour sélectionner</label>.
+                                <div id="embedUrlPreview" class="attachment-preview" style="display: none;">
+                                    <span id="embedUrlName"></span>
+                                    <button type="button" id="removeEmbedUrlBtn" class="remove-attachment-btn" data-type="url">×</button>
+                                </div>
+                            </div>
+                            <small>Si une image est sélectionnée, l'URL sera remplacée par le lien de l'attachement.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="embedAuthor">Auteur</label>
+                            <input type="text" id="embedAuthor" class="input" placeholder="Nom de l'auteur">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="embedAuthorIcon">URL icône auteur</label>
+                            <input type="url" id="embedAuthorIcon" class="input" placeholder="https://example.com/icon.png">
+                            <div id="embedAuthorIconDropArea" class="drop-area embed-drop-area small-drop-area">
+                                Glissez-déposez une image ou
+                                <input type="file" id="embedAuthorIconFileInput" data-type="authorIcon" accept="image/*" style="display: none;">
+                                <label for="embedAuthorIconFileInput" class="file-label">cliquez pour sélectionner</label>.
+                                <div id="embedAuthorIconPreview" class="attachment-preview" style="display: none;">
+                                    <span id="embedAuthorIconName"></span>
+                                    <button type="button" id="removeEmbedAuthorIconBtn" class="remove-attachment-btn" data-type="authorIcon">×</button>
+                                </div>
+                            </div>
+                            <small>Si une image est sélectionnée, l'URL sera remplacée par le lien de l'attachement.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="embedThumbnailUrl">URL miniature (thumbnail)</label>
+                            <input type="url" id="embedThumbnailUrl" class="input" placeholder="https://example.com/thumb.png">
+                            <div id="embedThumbnailDropArea" class="drop-area embed-drop-area">
+                                Glissez-déposez une image ici ou
+                                <input type="file" id="embedThumbnailFileInput" data-type="thumbnail" accept="image/*" style="display: none;">
+                                <label for="embedThumbnailFileInput" class="file-label">cliquez pour sélectionner</label>.
+                                <div id="embedThumbnailPreview" class="attachment-preview" style="display: none;">
+                                    <span id="embedThumbnailName"></span>
+                                    <button type="button" id="removeEmbedThumbnailBtn" class="remove-attachment-btn" data-type="thumbnail">×</button>
+                                </div>
+                            </div>
+                            <small>Sera prioritaire sur l'URL saisie ci-dessus. L'image sera envoyée en tant qu'attachement.</small>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="embedImageUrl">URL image principale</label>
+                            <input type="url" id="embedImageUrl" class="input" placeholder="https://example.com/image.png">
+                            <div id="embedImageDropArea" class="drop-area embed-drop-area">
+                                Glissez-déposez une image ici ou
+                                <input type="file" id="embedImageFileInput" data-type="image" accept="image/*" style="display: none;">
+                                <label for="embedImageFileInput" class="file-label">cliquez pour sélectionner</label>.
+                                <div id="embedImagePreview" class="attachment-preview" style="display: none;">
+                                    <span id="embedImageName"></span>
+                                    <button type="button" id="removeEmbedImageBtn" class="remove-attachment-btn" data-type="image">×</button>
+                                </div>
+                            </div>
+                            <small>Sera prioritaire sur l'URL saisie ci-dessus. L'image sera envoyée en tant qu'attachement.</small>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="embedFooter">Footer</label>
+                            <input type="text" id="embedFooter" class="input" placeholder="Texte du footer">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="embedFooterIcon">URL icône footer</label>
+                            <input type="url" id="embedFooterIcon" class="input" placeholder="https://example.com/footer-icon.png">
+                            <div id="embedFooterIconDropArea" class="drop-area embed-drop-area small-drop-area">
+                                Glissez-déposez une image ou
+                                <input type="file" id="embedFooterIconFileInput" data-type="footerIcon" accept="image/*" style="display: none;">
+                                <label for="embedFooterIconFileInput" class="file-label">cliquez pour sélectionner</label>.
+                                <div id="embedFooterIconPreview" class="attachment-preview" style="display: none;">
+                                    <span id="embedFooterIconName"></span>
+                                    <button type="button" id="removeEmbedFooterIconBtn" class="remove-attachment-btn" data-type="footerIcon">×</button>
+                                </div>
+                            </div>
+                            <small>Si une image est sélectionnée, l'URL sera remplacée par le lien de l'attachement.</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="embedTimestamp">
+                                <span>Ajouter un timestamp</span>
+                            </label>
+                        </div>
+
+                        <div class="fields-section">
+                            <label>Champs (Fields)</label>
+                            <div id="fieldsList"></div>
+                            <button type="button" class="btn btn-secondary" id="addFieldBtn">+ Ajouter un champ</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🔘 Boutons</h2>
+                    <div id="buttonsList"></div>
+                    <button type="button" class="btn btn-secondary" id="addButtonBtn">+ Ajouter un bouton</button>
+                    <small>Maximum 5 boutons de type lien par message</small>
+                </div>
+
+                <div class="section actions">
+                    <button type="button" class="btn btn-primary" id="sendMessageBtn">
+                        🚀 Envoyer le message
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="previewBtn">
+                        👁️ Prévisualiser
+                    </button>
+                    <button type="button" class="btn btn-danger" id="resetBtn">
+                        🗑️ Réinitialiser
+                    </button>
+                </div>
+
+                <div id="statusMessage" class="status-message"></div>
+            </div>
+
+            <div class="preview-panel">
+                <h2>👁️ Aperçu</h2>
+                <div id="previewContainer" class="preview-container">
+                    <div class="preview-message">
+                        <img id="preview-bot-avatar" class="preview-avatar" src="" alt="Bot Avatar">
+                        <div class="preview-content">
+                            <div class="preview-header">
+                                <span id="preview-bot-username" class="preview-username"></span>
+                                <span id="preview-timestamp" class="preview-timestamp"></span>
+                            </div>
+                            <div id="previewMessageContent" class="preview-text"></div>
+                            <img id="previewAttachmentImage" class="preview-attachment-image" style="display: none;" src="" alt="Attachment Preview">
+                            <div id="previewEmbed"></div>
+                            <div id="previewButtons"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mentionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>@ Sélecteur de Mention</h3>
+                <button type="button" class="modal-close" data-modal="mentionModal">×</button>
+            </div>
+            <div class="mention-tabs" id="mentionTabs">
+                <button type="button" class="mention-tab active" data-type="roles">Rôles</button>
+            </div>
+            <div class="list-container" id="mentionList">
+            </div>
+        </div>
+    </div>
+
+    <div id="emojiModal" class="modal">
+        <div class="modal-content emoji-picker">
+            <div class="modal-header">
+                <h3>😀 Sélecteur d'Émoji</h3>
+                <button type="button" class="modal-close" data-modal="emojiModal">×</button>
+            </div>
+
+            <p class="small" style="margin-bottom: 15px; color: #777;">
+                **Émojis du serveur :** Utilisez le sélecteur "Serveur" ci-dessous ou tapez la syntaxe exacte <code>:nom_de_l_emoji:</code> dans le contenu du message pour utiliser un émoji custom.
+            </p>
+
+            <div class="emoji-tabs" id="emojiTabs">
+                <button type="button" class="emoji-tab active" data-type="standard">Standard</button>
+                <button type="button" class="emoji-tab" data-type="custom">Serveur (Custom)</button>
+            </div>
+
+            <div id="standardEmojiGrid" class="emoji-grid">
+                <span data-emoji="😀">😀</span><span data-emoji="😎">😎</span><span data-emoji="😍">😍</span><span data-emoji="🎉">🎉</span><span data-emoji="🔥">🔥</span><span data-emoji="👍">👍</span><span data-emoji="❤️">❤️</span><span data-emoji="🤔">🤔</span>
+                <span data-emoji="😢">😢</span><span data-emoji="😡">😡</span><span data-emoji="🤯">🤯</span><span data-emoji="🥳">🥳</span><span data-emoji="🤩">🤩</span><span data-emoji="🥶">🥶</span><span data-emoji="😴">😴</span><span data-emoji="😈">😈</span>
+            </div>
+
+            <div id="customEmojiList" class="list-container" style="display: none;">
+            </div>
+
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
