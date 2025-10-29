@@ -2,21 +2,30 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const fetch = require('node-fetch');
 
 let io;
 
 async function dataURLToAttachment(dataUrl, fileName) {
-    const response = await fetch(dataUrl);
-    const buffer = await response.buffer();
-    // Utilise le nom de fichier spécifié ou un nom par défaut. Discord gère les doublons automatiquement.
+    // Extraire les données base64 du data URL
+    const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+
+    if (!matches || matches.length !== 3) {
+        throw new Error('Format de data URL invalide');
+    }
+
+    // Convertir base64 en Buffer
+    const base64Data = matches[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+
     return new AttachmentBuilder(buffer, { name: fileName });
 }
 
 function startWebServer(client) {
   const app = express();
   const server = http.createServer(app);
-  io = new Server(server);
+  io = new Server(server, {
+    maxHttpBufferSize: 10e6 // 10 MB pour permettre l'upload d'images
+  });
 
   const PORT = process.env.PORT || 3000;
 
@@ -145,34 +154,49 @@ function startWebServer(client) {
         }
 
         // Gérer les attachements (message simple et embed)
-        if (messageData.attachment && messageData.attachment.data) {
-            const attachment = await dataURLToAttachment(messageData.attachment.data, messageData.attachment.name || 'attachment.png');
-            payload.files.push(attachment);
-        }
+        try {
+            if (messageData.attachment && messageData.attachment.data) {
+                console.log('📎 Traitement attachment principal...');
+                const attachment = await dataURLToAttachment(messageData.attachment.data, messageData.attachment.name || 'attachment.png');
+                payload.files.push(attachment);
+            }
 
-        if (messageData.embedUrlAttachment && messageData.embedUrlAttachment.data) {
-            const attachment = await dataURLToAttachment(messageData.embedUrlAttachment.data, messageData.embedUrlAttachment.name || 'url_image.png');
-            payload.files.push(attachment);
-        }
+            if (messageData.embedUrlAttachment && messageData.embedUrlAttachment.data) {
+                console.log('📎 Traitement embedUrlAttachment...');
+                const attachment = await dataURLToAttachment(messageData.embedUrlAttachment.data, messageData.embedUrlAttachment.name || 'url_image.png');
+                payload.files.push(attachment);
+            }
 
-        if (messageData.embedAuthorIconAttachment && messageData.embedAuthorIconAttachment.data) {
-            const attachment = await dataURLToAttachment(messageData.embedAuthorIconAttachment.data, messageData.embedAuthorIconAttachment.name || 'author_icon.png');
-            payload.files.push(attachment);
-        }
+            if (messageData.embedAuthorIconAttachment && messageData.embedAuthorIconAttachment.data) {
+                console.log('📎 Traitement embedAuthorIconAttachment...');
+                const attachment = await dataURLToAttachment(messageData.embedAuthorIconAttachment.data, messageData.embedAuthorIconAttachment.name || 'author_icon.png');
+                payload.files.push(attachment);
+            }
 
-        if (messageData.embedFooterIconAttachment && messageData.embedFooterIconAttachment.data) {
-            const attachment = await dataURLToAttachment(messageData.embedFooterIconAttachment.data, messageData.embedFooterIconAttachment.name || 'footer_icon.png');
-            payload.files.push(attachment);
-        }
+            if (messageData.embedFooterIconAttachment && messageData.embedFooterIconAttachment.data) {
+                console.log('📎 Traitement embedFooterIconAttachment...');
+                const attachment = await dataURLToAttachment(messageData.embedFooterIconAttachment.data, messageData.embedFooterIconAttachment.name || 'footer_icon.png');
+                payload.files.push(attachment);
+            }
 
-        if (messageData.embedThumbnailAttachment && messageData.embedThumbnailAttachment.data) {
-            const attachment = await dataURLToAttachment(messageData.embedThumbnailAttachment.data, messageData.embedThumbnailAttachment.name || 'thumbnail.png');
-            payload.files.push(attachment);
-        }
+            if (messageData.embedThumbnailAttachment && messageData.embedThumbnailAttachment.data) {
+                console.log('📎 Traitement embedThumbnailAttachment...');
+                const attachment = await dataURLToAttachment(messageData.embedThumbnailAttachment.data, messageData.embedThumbnailAttachment.name || 'thumbnail.png');
+                payload.files.push(attachment);
+            }
 
-        if (messageData.embedImageAttachment && messageData.embedImageAttachment.data) {
-            const attachment = await dataURLToAttachment(messageData.embedImageAttachment.data, messageData.embedImageAttachment.name || 'image.png');
-            payload.files.push(attachment);
+            if (messageData.embedImageAttachment && messageData.embedImageAttachment.data) {
+                console.log('📎 Traitement embedImageAttachment...');
+                const attachment = await dataURLToAttachment(messageData.embedImageAttachment.data, messageData.embedImageAttachment.name || 'image.png');
+                payload.files.push(attachment);
+            }
+        } catch (attachError) {
+            console.error('Erreur lors du traitement des attachments:', attachError);
+            socket.emit('messageSent', {
+                success: false,
+                error: 'Erreur lors du traitement des fichiers: ' + attachError.message
+            });
+            return;
         }
 
 
@@ -201,7 +225,6 @@ function startWebServer(client) {
           if (messageData.embed.author) {
             embed.setAuthor({
               name: messageData.embed.author.name,
-              // L'URL de l'icône de l'auteur peut être une URL standard ou 'attachment://...'
               iconURL: messageData.embed.author.icon_url
             });
           }
@@ -219,7 +242,6 @@ function startWebServer(client) {
           if (messageData.embed.footer) {
             embed.setFooter({
               text: messageData.embed.footer.text,
-              // L'URL de l'icône du footer peut être une URL standard ou 'attachment://...'
               iconURL: messageData.embed.footer.icon_url
             });
           }
@@ -279,6 +301,8 @@ function startWebServer(client) {
             socket.emit('messageSent', { success: false, error: 'Le message est vide' });
             return;
         }
+
+        console.log(`📤 Envoi du message avec ${totalFiles} fichier(s)`);
 
         // Envoyer le message
         await channel.send(payload);
