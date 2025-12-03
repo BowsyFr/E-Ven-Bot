@@ -8,9 +8,9 @@ const qs = require('qs');
 let io;
 
 // Configuration OAuth2
-const CLIENT_ID = process.env.CLIENT_ID || "1430581751570239560";
-const CLIENT_SECRET = process.env.CLIENT_SECRET || "2By802Zrj12UAXbjeuNLNK1JMUESY6cf";
-const GUILD_ID = process.env.GUILD_ID || "1430581638072500307";
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const GUILD_ID = process.env.GUILD_ID;
 
 // Sessions simples en mémoire (pour production, utiliser Redis ou une DB)
 const sessions = new Map();
@@ -59,8 +59,8 @@ function startWebServer(client) {
         maxHttpBufferSize: 10e6
     });
 
-    const PORT = process.env.PORT || 3001;
-    const REDIRECT_URI = process.env.REDIRECT_URI || `http://localhost:${PORT}/callback`;
+    const PORT = process.env.PORT;
+    const REDIRECT_URI = process.env.REDIRECT_URI;
 
     // Middleware pour parser les cookies
     app.use((req, res, next) => {
