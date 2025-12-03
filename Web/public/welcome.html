@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Ven Message Composer - Bienvenue</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .welcome-container {
+            background: white;
+            border-radius: 16px;
+            padding: 60px 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .features {
+            text-align: left;
+            margin: 40px 0;
+            padding: 0 20px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        .feature-icon {
+            font-size: 1.5rem;
+            margin-right: 15px;
+            min-width: 30px;
+        }
+
+        .feature-text {
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .login-btn {
+            background: #5865F2;
+            color: white;
+            padding: 16px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(88, 101, 242, 0.4);
+        }
+
+        .login-btn:hover {
+            background: #4e57e3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(88, 101, 242, 0.6);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .security-note {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f0f2ff;
+            border-radius: 8px;
+            color: #5865F2;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .security-note strong {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .welcome-container {
+                padding: 40px 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .logo {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-container">
+        <div class="logo">📝</div>
+        <h1>E-Ven Message Composer</h1>
+        <p class="subtitle">
+            Créez et envoyez des messages Discord personnalisés avec embeds, boutons et plus encore !
+        </p>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <div class="features">
+            <div class="feature">
+                <span class="feature-icon">✨</span>
+                <span class="feature-text">Interface intuitive pour composer des messages riches</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🎨</span>
+                <span class="feature-text">Embeds personnalisables avec images et champs</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🔘</span>
+                <span class="feature-text">Boutons interactifs et composants Discord</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">👁️</span>
+                <span class="feature-text">Prévisualisation en temps réel de vos messages</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">📎</span>
+                <span class="feature-text">Support des pièces jointes et images</span>
+            </div>
+        </div>
+
+        <a href="/login" class="login-btn">
+            🚀 Se connecter avec Discord
+        </a>
+
+        <div class="security-note">
+            <strong>🔒 Connexion sécurisée</strong>
+            Cette interface nécessite les permissions d'administrateur du serveur Discord pour garantir la sécurité de vos messages.
+        </div>
+    </div>
+
+    <script>
+        // Afficher les erreurs si présentes dans l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+
+        if (error) {
+            const errorMessage = document.getElementById('errorMessage');
+            let message = '';
+
+            switch(error) {
+                case 'no_code':
+                    message = '❌ Erreur d\'authentification : code manquant.';
+                    break;
+                case 'auth_failed':
+                    message = '❌ L\'authentification a échoué. Veuillez réessayer.';
+                    break;
+                default:
+                    message = '❌ Une erreur s\'est produite lors de la connexion.';
+            }
+
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+
+            // Nettoyer l'URL après 5 secondes
+            setTimeout(() => {
+                window.history.replaceState({}, document.title, '/');
+                errorMessage.classList.remove('show');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
