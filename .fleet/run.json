@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        
+        {
+            "type": "node",
+            "name": "index.js",
+            "file": "$PROJECT_DIR$/index.js",
+            "workingDir": "$PROJECT_DIR$"
+        }
+    ]
+}
