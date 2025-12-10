@@ -59,7 +59,8 @@ function startWebServer(client) {
         maxHttpBufferSize: 10e6
     });
 
-    const PORT = process.env.PORT;
+    const PORT = process.env.PORT || 3000;
+
     const REDIRECT_URI = process.env.REDIRECT_URI;
 
     // Middleware pour parser les cookies
