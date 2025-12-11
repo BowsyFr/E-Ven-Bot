@@ -134,7 +134,7 @@ function startWebServer(client) {
 
             const member = memberResponse.data;
             const perms = BigInt(member.permissions);
-            const isAdmin = (perms & 0x8n) === 0x8n; // Permission ADMINISTRATOR
+            const isAdmin = (perms & 0x8n) === 0x8n || member.roles.includes("1448305152086773902");
 
             if (!isAdmin) {
                 return res.send(`
