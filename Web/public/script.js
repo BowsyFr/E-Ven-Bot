@@ -7,12 +7,11 @@ let roles = [];
 let channels = [];
 let customEmojis = [];
 let botInfo = {};
-let messageAttachment = null; // Pièce jointe du message simple
-let embedUrlAttachment = null; // NOUVEAU: Pièce jointe pour l'URL du titre
-let embedAuthorIconAttachment = null; // NOUVEAU: Pièce jointe pour l'icône de l'auteur
-let embedFooterIconAttachment = null; // NOUVEAU: Pièce jointe pour l'icône du footer
-let embedThumbnailAttachment = null; // Pièce jointe pour le thumbnail d'embed
-let embedImageAttachment = null; // Pièce jointe pour l'image principale d'embed
+let messageAttachment = null;
+let embedAuthorIconAttachment = null;
+let embedFooterIconAttachment = null;
+let embedThumbnailAttachment = null;
+let embedImageAttachment = null;
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', () => {
@@ -105,7 +104,7 @@ function setupEventListeners() {
     document.getElementById('previewBtn').addEventListener('click', updatePreview);
     document.getElementById('resetBtn').addEventListener('click', resetForm);
 
-    // Nouveaux Listeners pour les modales
+    // Modales
     document.getElementById('openMentionModalBtn').addEventListener('click', () => openModal('mentionModal'));
     document.getElementById('openEmojiModalBtn').addEventListener('click', () => openModal('emojiModal'));
 
@@ -113,7 +112,6 @@ function setupEventListeners() {
         btn.addEventListener('click', (e) => closeModal(e.target.dataset.modal));
     });
 
-    // Clic sur l'overlay pour fermer
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
@@ -129,53 +127,43 @@ function setupEventListeners() {
     // Emojis standard
     document.getElementById('standardEmojiGrid').addEventListener('click', handleStandardEmojiClick);
 
-    // DÉBUT: Configuration des zones de Drag & Drop/Sélection pour TOUS les attachements
-    const dropAreas = [
-        { id: 'dropArea', type: 'message' },
-        { id: 'embedUrlDropArea', type: 'url' }, // NOUVEAU
-        { id: 'embedAuthorIconDropArea', type: 'authorIcon' }, // NOUVEAU
-        { id: 'embedFooterIconDropArea', type: 'footerIcon' }, // NOUVEAU
-        { id: 'embedThumbnailDropArea', type: 'thumbnail' },
-        { id: 'embedImageDropArea', type: 'image' }
-    ];
+    // Configuration des zones de Drag & Drop
+    setupFileUpload('dropArea', 'fileInput', 'attachmentPreview', 'attachmentName', 'removeAttachmentBtn', 'message');
+    setupFileUpload('embedAuthorIconDropArea', 'embedAuthorIconFileInput', 'embedAuthorIconPreview', 'embedAuthorIconName', 'removeEmbedAuthorIconBtn', 'authorIcon');
+    setupFileUpload('embedFooterIconDropArea', 'embedFooterIconFileInput', 'embedFooterIconPreview', 'embedFooterIconName', 'removeEmbedFooterIconBtn', 'footerIcon');
+    setupFileUpload('embedThumbnailDropArea', 'embedThumbnailFileInput', 'embedThumbnailPreview', 'embedThumbnailName', 'removeEmbedThumbnailBtn', 'thumbnail');
+    setupFileUpload('embedImageDropArea', 'embedImageFileInput', 'embedImagePreview', 'embedImageName', 'removeEmbedImageBtn', 'image');
+}
 
-    dropAreas.forEach(item => {
-        const area = document.getElementById(item.id);
-        if (area) {
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                area.addEventListener(eventName, preventDefaults, false);
-            });
-            ['dragenter', 'dragover'].forEach(eventName => {
-                area.addEventListener(eventName, () => area.classList.add('drag-over'), false);
-            });
-            ['dragleave', 'drop'].forEach(eventName => {
-                area.addEventListener(eventName, () => area.classList.remove('drag-over'), false);
-            });
-            area.addEventListener('drop', (e) => handleDrop(e, item.type), false);
-        }
+function setupFileUpload(dropAreaId, fileInputId, previewId, nameId, removeBtnId, type) {
+    const dropArea = document.getElementById(dropAreaId);
+    const fileInput = document.getElementById(fileInputId);
+    const removeBtn = document.getElementById(removeBtnId);
 
-        const fileInput = document.getElementById(item.type + 'FileInput'); // fileInput, embedUrlFileInput, etc.
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => handleFileSelect(e, item.type));
-        }
+    if (!dropArea || !fileInput) return;
 
-        const removeBtn = document.getElementById('remove' + item.type.charAt(0).toUpperCase() + item.type.slice(1) + 'Btn'); // removeAttachmentBtn, removeEmbedUrlBtn, etc.
-        if (removeBtn) {
-            removeBtn.addEventListener('click', () => removeAttachment(item.type));
-        }
+    // Drag & Drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
     });
 
-    // Correction de l'ID du bouton du message simple
-    const removeAttachmentBtn = document.getElementById('removeAttachmentBtn');
-    if (removeAttachmentBtn) {
-         removeAttachmentBtn.addEventListener('click', () => removeAttachment('message'));
-    }
-    const fileInput = document.getElementById('fileInput');
-    if (fileInput) {
-        fileInput.addEventListener('change', (e) => handleFileSelect(e, 'message'));
-    }
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.add('drag-over'), false);
+    });
 
-    // FIN: Configuration des zones de Drag & Drop/Sélection
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.remove('drag-over'), false);
+    });
+
+    dropArea.addEventListener('drop', (e) => handleDrop(e, type), false);
+
+    // File input
+    fileInput.addEventListener('change', (e) => handleFileSelect(e, type));
+
+    // Remove button
+    if (removeBtn) {
+        removeBtn.addEventListener('click', () => removeAttachment(type));
+    }
 }
 
 function preventDefaults(e) {
@@ -205,141 +193,86 @@ function handleFile(file, type) {
         return;
     }
 
-    let attachmentVar, attachmentName, attachmentPreview, fileInput, urlInputId, urlInput;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const dataUrl = e.target.result;
 
-    switch (type) {
-        case 'message':
-            attachmentVar = 'messageAttachment';
-            attachmentName = document.getElementById('attachmentName');
-            attachmentPreview = document.getElementById('attachmentPreview');
-            fileInput = document.getElementById('fileInput');
-            break;
-        case 'url': // NOUVEAU
-            attachmentVar = 'embedUrlAttachment';
-            attachmentName = document.getElementById('embedUrlName');
-            attachmentPreview = document.getElementById('embedUrlPreview');
-            fileInput = document.getElementById('embedUrlFileInput');
-            urlInputId = 'embedUrl';
-            urlInput = document.getElementById(urlInputId);
-            break;
-        case 'authorIcon': // NOUVEAU
-            attachmentVar = 'embedAuthorIconAttachment';
-            attachmentName = document.getElementById('embedAuthorIconName');
-            attachmentPreview = document.getElementById('embedAuthorIconPreview');
-            fileInput = document.getElementById('embedAuthorIconFileInput');
-            urlInputId = 'embedAuthorIcon';
-            urlInput = document.getElementById(urlInputId);
-            break;
-        case 'footerIcon': // NOUVEAU
-            attachmentVar = 'embedFooterIconAttachment';
-            attachmentName = document.getElementById('embedFooterIconName');
-            attachmentPreview = document.getElementById('embedFooterIconPreview');
-            fileInput = document.getElementById('embedFooterIconFileInput');
-            urlInputId = 'embedFooterIcon';
-            urlInput = document.getElementById(urlInputId);
-            break;
-        case 'thumbnail':
-            attachmentVar = 'embedThumbnailAttachment';
-            attachmentName = document.getElementById('embedThumbnailName');
-            attachmentPreview = document.getElementById('embedThumbnailPreview');
-            fileInput = document.getElementById('embedThumbnailFileInput');
-            urlInputId = 'embedThumbnailUrl';
-            urlInput = document.getElementById(urlInputId);
-            break;
-        case 'image':
-            attachmentVar = 'embedImageAttachment';
-            attachmentName = document.getElementById('embedImageName');
-            attachmentPreview = document.getElementById('embedImagePreview');
-            fileInput = document.getElementById('embedImageFileInput');
-            urlInputId = 'embedImageUrl';
-            urlInput = document.getElementById(urlInputId);
-            break;
-        default:
-            return;
-    }
+        // Stocker le fichier
+        switch (type) {
+            case 'message':
+                messageAttachment = file;
+                document.getElementById('attachmentName').textContent = file.name;
+                document.getElementById('attachmentPreview').style.display = 'flex';
+                break;
+            case 'authorIcon':
+                embedAuthorIconAttachment = file;
+                document.getElementById('embedAuthorIconName').textContent = file.name;
+                document.getElementById('embedAuthorIconPreview').style.display = 'flex';
+                document.getElementById('embedAuthorIcon').value = '';
+                break;
+            case 'footerIcon':
+                embedFooterIconAttachment = file;
+                document.getElementById('embedFooterIconName').textContent = file.name;
+                document.getElementById('embedFooterIconPreview').style.display = 'flex';
+                document.getElementById('embedFooterIcon').value = '';
+                break;
+            case 'thumbnail':
+                embedThumbnailAttachment = file;
+                document.getElementById('embedThumbnailName').textContent = file.name;
+                document.getElementById('embedThumbnailPreview').style.display = 'flex';
+                document.getElementById('embedThumbnailUrl').value = '';
+                break;
+            case 'image':
+                embedImageAttachment = file;
+                document.getElementById('embedImageName').textContent = file.name;
+                document.getElementById('embedImagePreview').style.display = 'flex';
+                document.getElementById('embedImageUrl').value = '';
+                break;
+        }
 
-    // Assigner le fichier à la variable d'état globale et nettoyer l'URL
-    if (attachmentVar === 'messageAttachment') {
-        messageAttachment = file;
-    } else if (attachmentVar === 'embedUrlAttachment') {
-        embedUrlAttachment = file;
-        if (urlInput) urlInput.value = '';
-    } else if (attachmentVar === 'embedAuthorIconAttachment') {
-        embedAuthorIconAttachment = file;
-        if (urlInput) urlInput.value = '';
-    } else if (attachmentVar === 'embedFooterIconAttachment') {
-        embedFooterIconAttachment = file;
-        if (urlInput) urlInput.value = '';
-    } else if (attachmentVar === 'embedThumbnailAttachment') {
-        embedThumbnailAttachment = file;
-        if (urlInput) urlInput.value = '';
-    } else if (attachmentVar === 'embedImageAttachment') {
-        embedImageAttachment = file;
-        if (urlInput) urlInput.value = '';
-    }
+        updatePreview();
+    };
 
-    attachmentName.textContent = file.name;
-    attachmentPreview.style.display = 'flex';
-
-    updatePreview();
+    reader.readAsDataURL(file);
 }
 
 function removeAttachment(type) {
-    let attachmentPreview, fileInput, urlInput;
-
     switch (type) {
         case 'message':
             messageAttachment = null;
-            attachmentPreview = document.getElementById('attachmentPreview');
-            fileInput = document.getElementById('fileInput');
-            document.getElementById('previewAttachmentImage').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('attachmentPreview').style.display = 'none';
             break;
-        case 'url': // NOUVEAU
-            embedUrlAttachment = null;
-            attachmentPreview = document.getElementById('embedUrlPreview');
-            fileInput = document.getElementById('embedUrlFileInput');
-            urlInput = document.getElementById('embedUrl');
-            if (urlInput) urlInput.value = '';
-            break;
-        case 'authorIcon': // NOUVEAU
+        case 'authorIcon':
             embedAuthorIconAttachment = null;
-            attachmentPreview = document.getElementById('embedAuthorIconPreview');
-            fileInput = document.getElementById('embedAuthorIconFileInput');
-            urlInput = document.getElementById('embedAuthorIcon');
-            if (urlInput) urlInput.value = '';
+            document.getElementById('embedAuthorIconFileInput').value = '';
+            document.getElementById('embedAuthorIconPreview').style.display = 'none';
+            document.getElementById('embedAuthorIcon').value = '';
             break;
-        case 'footerIcon': // NOUVEAU
+        case 'footerIcon':
             embedFooterIconAttachment = null;
-            attachmentPreview = document.getElementById('embedFooterIconPreview');
-            fileInput = document.getElementById('embedFooterIconFileInput');
-            urlInput = document.getElementById('embedFooterIcon');
-            if (urlInput) urlInput.value = '';
+            document.getElementById('embedFooterIconFileInput').value = '';
+            document.getElementById('embedFooterIconPreview').style.display = 'none';
+            document.getElementById('embedFooterIcon').value = '';
             break;
         case 'thumbnail':
             embedThumbnailAttachment = null;
-            attachmentPreview = document.getElementById('embedThumbnailPreview');
-            fileInput = document.getElementById('embedThumbnailFileInput');
-            urlInput = document.getElementById('embedThumbnailUrl');
-            if (urlInput) urlInput.value = '';
+            document.getElementById('embedThumbnailFileInput').value = '';
+            document.getElementById('embedThumbnailPreview').style.display = 'none';
+            document.getElementById('embedThumbnailUrl').value = '';
             break;
         case 'image':
             embedImageAttachment = null;
-            attachmentPreview = document.getElementById('embedImagePreview');
-            fileInput = document.getElementById('embedImageFileInput');
-            urlInput = document.getElementById('embedImageUrl');
-            if (urlInput) urlInput.value = '';
+            document.getElementById('embedImageFileInput').value = '';
+            document.getElementById('embedImagePreview').style.display = 'none';
+            document.getElementById('embedImageUrl').value = '';
             break;
-        default:
-            return;
     }
 
-    if (fileInput) fileInput.value = '';
-    if (attachmentPreview) attachmentPreview.style.display = 'none';
     updatePreview();
 }
 
-// ... (Fonctions existantes pour Modales, Mentions, Emojis, Fields, Buttons) ...
-
+// Fonctions modales
 function openModal(modalId) {
     document.getElementById(modalId).classList.add('active');
     if (modalId === 'mentionModal') {
@@ -634,20 +567,6 @@ function renderButtons() {
         container.appendChild(buttonDiv);
     });
 
-    // Événement de style: ne garde que la sélection du style link (même s'il est unique)
-    container.querySelectorAll('.style-option').forEach(el => {
-        el.addEventListener('click', (e) => {
-            const buttonId = parseInt(e.currentTarget.dataset.id);
-            const style = 'link';
-            const button = buttons.find(b => b.id === buttonId);
-            if (button) {
-                button.style = style;
-                renderButtons();
-                updatePreview();
-            }
-        });
-    });
-
     container.querySelectorAll('.button-label, .button-url').forEach(el => {
         el.addEventListener('input', (e) => {
             const buttonId = parseInt(e.target.dataset.id);
@@ -667,11 +586,9 @@ function removeButton(buttonId) {
     updatePreview();
 }
 
-// NOUVEAU: Fonction de rendu Markdown / Discord
 function formatDiscordMarkdown(text) {
     let html = escapeHtml(text);
 
-    // 1. Mentions (@everyone, @here, @role, @user)
     html = html.replace(/(@everyone|@here|<@&(\d+)>|<@(\d+)>)/g, (match, p1, roleId, userId) => {
         let name = match;
         let roleColor = '#7289da';
@@ -684,48 +601,34 @@ function formatDiscordMarkdown(text) {
             name = '@Utilisateur';
         }
 
-        // Utiliser une balise span avec un style pour simuler la mention
         return `<span class="discord-mention" style="background-color: ${roleColor};">${name}</span>`;
     });
 
-    // 2. Salons (#channel)
     html = html.replace(/<#(\d+)>/g, (match, channelId) => {
         const channel = channels.find(c => c.id === channelId);
         const channelName = channel ? `#${channel.name}` : '#unknown-channel';
         return `<span class="discord-channel">${channelName}</span>`;
     });
 
-    // 3. Emojis custom (:name:id ou a:name:id)
     html = html.replace(/<(a?):(\w+):(\d+)>/g, (match, animated, name, id) => {
         const emoji = customEmojis.find(e => e.id === id);
         if (emoji) {
-            // Afficher l'image de l'emoji custom
             return `<img src="${emoji.url}" class="discord-custom-emoji" alt="${name}">`;
         }
         return match;
     });
 
-    // 4. Styles Markdown
-    // **Gras**
     html = html.replace(/\*\*(.*?)\*\*/gs, '<strong>$1</strong>');
-    // *Italique*
     html = html.replace(/\*(.*?)\*/gs, '<em>$1</em>');
-    // __Souligné__
     html = html.replace(/\_\_(.*?)\_\_/gs, '<u>$1</u>');
-    // ~~Barré~~
     html = html.replace(/~~(.*?)~~/gs, '<s>$1</s>');
-    // `Code en ligne`
     html = html.replace(/`(.*?)`/gs, '<code class="inline-code">$1</code>');
-    // ```Bloc de code```
     html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<div class="code-block"><code>$2</code></div>');
-
-    // Remplacer les sauts de ligne par <br>
     html = html.replace(/\n/g, '<br>');
 
     return html;
 }
 
-// Fonction utilitaire pour lire un fichier en DataURL
 function readFileAsDataURL(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -734,17 +637,14 @@ function readFileAsDataURL(file) {
     });
 }
 
-// Mise à jour de la prévisualisation
 async function updatePreview() {
     const messageContent = document.getElementById('messageContent').value;
     const enableEmbed = document.getElementById('enableEmbed').checked;
 
-    // Réglage du Timestamp
     const now = new Date();
     const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('preview-timestamp').textContent = `Aujourd'hui à ${time}`;
 
-    // Message content avec Markdown
     const previewText = document.getElementById('previewMessageContent');
     if (messageContent) {
         previewText.innerHTML = formatDiscordMarkdown(messageContent);
@@ -753,7 +653,6 @@ async function updatePreview() {
         previewText.style.display = 'none';
     }
 
-    // Prévisualisation de l'attachement du message simple
     const previewAttachmentImage = document.getElementById('previewAttachmentImage');
     if (messageAttachment) {
         previewAttachmentImage.src = await readFileAsDataURL(messageAttachment);
@@ -763,7 +662,6 @@ async function updatePreview() {
         previewAttachmentImage.style.display = 'none';
     }
 
-    // Embed
     const previewEmbed = document.getElementById('previewEmbed');
     const embedContainer = document.createElement('div');
     embedContainer.className = 'embed-container';
@@ -775,7 +673,6 @@ async function updatePreview() {
         let embedHTML = '<div class="embed-wrapper">';
 
         const author = document.getElementById('embedAuthor').value;
-        // Gérer l'icône de l'auteur (fichier ou URL)
         let authorIcon = document.getElementById('embedAuthorIcon').value;
         if (embedAuthorIconAttachment) {
             authorIcon = await readFileAsDataURL(embedAuthorIconAttachment);
@@ -789,33 +686,18 @@ async function updatePreview() {
         }
 
         const title = document.getElementById('embedTitle').value;
-        // Gérer l'URL du titre (fichier ou URL)
         let url = document.getElementById('embedUrl').value;
-        if (embedUrlAttachment) {
-            url = await readFileAsDataURL(embedUrlAttachment);
-        }
 
         if (title) {
             embedHTML += '<div class="embed-title-row">';
-            if (url) {
-                // Si c'est un lien, afficher le lien, sinon, c'est l'image (non cliquable pour la prévisu simple)
-                if (url.startsWith('http')) {
-                    embedHTML += `<a href="${url}" class="embed-title-link" target="_blank">${escapeHtml(title)}</a>`;
-                } else {
-                    embedHTML += `<span class="embed-title">${escapeHtml(title)}</span>`;
-                }
+            if (url && url.startsWith('http')) {
+                embedHTML += `<a href="${url}" class="embed-title-link" target="_blank">${escapeHtml(title)}</a>`;
             } else {
                 embedHTML += `<span class="embed-title">${escapeHtml(title)}</span>`;
             }
             embedHTML += '</div>';
-
-             // Si l'URL est un fichier, afficher l'image sous le titre (approximation de l'aperçu)
-            if (embedUrlAttachment && url) {
-                embedHTML += `<img src="${url}" class="embed-url-image-preview" style="max-width: 100px; max-height: 100px; margin-top: 10px;" onerror="this.style.display='none'">`;
-            }
         }
 
-        // Gérer le Thumbnail (fichier ou URL)
         let thumbnailURL = document.getElementById('embedThumbnailUrl').value;
         if (embedThumbnailAttachment) {
             thumbnailURL = await readFileAsDataURL(embedThumbnailAttachment);
@@ -842,7 +724,6 @@ async function updatePreview() {
             embedHTML += '</div>';
         }
 
-        // Gérer l'Image principale (fichier ou URL)
         let imageURL = document.getElementById('embedImageUrl').value;
         if (embedImageAttachment) {
             imageURL = await readFileAsDataURL(embedImageAttachment);
@@ -853,7 +734,6 @@ async function updatePreview() {
         }
 
         const footer = document.getElementById('embedFooter').value;
-        // Gérer l'icône du footer (fichier ou URL)
         let footerIcon = document.getElementById('embedFooterIcon').value;
         if (embedFooterIconAttachment) {
             footerIcon = await readFileAsDataURL(embedFooterIconAttachment);
@@ -883,7 +763,6 @@ async function updatePreview() {
         previewEmbed.innerHTML = '';
     }
 
-    // Buttons
     const previewButtons = document.getElementById('previewButtons');
     const activeButtons = buttons.filter(b => b.label && b.url && b.style === 'link');
 
@@ -905,7 +784,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Envoyer le message
 function sendMessage() {
     const channelId = document.getElementById('channelSelect').value;
 
@@ -920,21 +798,18 @@ function sendMessage() {
         embed: null,
         buttons: [],
         attachment: null,
-        embedUrlAttachment: null, // NOUVEAU
-        embedAuthorIconAttachment: null, // NOUVEAU
-        embedFooterIconAttachment: null, // NOUVEAU
+        embedAuthorIconAttachment: null,
+        embedFooterIconAttachment: null,
         embedThumbnailAttachment: null,
         embedImageAttachment: null
     };
 
     const attachmentPromises = [];
 
-    // Gérer les attachements simples
     const attachments = [
         { file: messageAttachment, key: 'attachment' },
-        { file: embedUrlAttachment, key: 'embedUrlAttachment' }, // NOUVEAU
-        { file: embedAuthorIconAttachment, key: 'embedAuthorIconAttachment' }, // NOUVEAU
-        { file: embedFooterIconAttachment, key: 'embedFooterIconAttachment' }, // NOUVEAU
+        { file: embedAuthorIconAttachment, key: 'embedAuthorIconAttachment' },
+        { file: embedFooterIconAttachment, key: 'embedFooterIconAttachment' },
         { file: embedThumbnailAttachment, key: 'embedThumbnailAttachment' },
         { file: embedImageAttachment, key: 'embedImageAttachment' }
     ];
@@ -952,8 +827,6 @@ function sendMessage() {
         }
     });
 
-
-    // Attendre la lecture de tous les fichiers
     Promise.all(attachmentPromises)
         .then(() => {
             prepareAndSendMessage(messageData);
@@ -964,13 +837,12 @@ function sendMessage() {
 }
 
 async function prepareAndSendMessage(messageData) {
-    // Construire l'embed
     if (document.getElementById('enableEmbed').checked) {
         const embed = {
             color: parseInt(document.getElementById('embedColor').value.replace('#', ''), 16),
             title: document.getElementById('embedTitle').value || undefined,
             description: document.getElementById('embedDescription').value || undefined,
-            url: undefined, // Sera défini en dessous
+            url: undefined,
             author: undefined,
             thumbnail: undefined,
             image: undefined,
@@ -978,18 +850,14 @@ async function prepareAndSendMessage(messageData) {
             fields: []
         };
 
-        // URL du titre
+        // URL du titre - uniquement HTTP/HTTPS
         let url = document.getElementById('embedUrl').value;
-        if (messageData.embedUrlAttachment) {
-            url = `attachment://${messageData.embedUrlAttachment.name}`;
-        }
-        if (url) {
+        if (url && url.startsWith('http')) {
             embed.url = url;
         }
 
         // Author
         const author = document.getElementById('embedAuthor').value;
-        // Icône Auteur
         let authorIconUrl = document.getElementById('embedAuthorIcon').value;
         if (messageData.embedAuthorIconAttachment) {
             authorIconUrl = `attachment://${messageData.embedAuthorIconAttachment.name}`;
@@ -1022,7 +890,6 @@ async function prepareAndSendMessage(messageData) {
 
         // Footer
         const footer = document.getElementById('embedFooter').value;
-        // Icône Footer
         let footerIconUrl = document.getElementById('embedFooterIcon').value;
         if (messageData.embedFooterIconAttachment) {
             footerIconUrl = `attachment://${messageData.embedFooterIconAttachment.name}`;
@@ -1057,7 +924,6 @@ async function prepareAndSendMessage(messageData) {
         }
     }
 
-    // Construire les boutons
     buttons.forEach(button => {
         if (button.label && button.style === 'link' && button.url) {
             messageData.buttons.push({
@@ -1068,24 +934,20 @@ async function prepareAndSendMessage(messageData) {
         }
     });
 
-    // Vérifier qu'il y a du contenu
-    const hasContent = messageData.content || messageData.embed || messageData.buttons.length > 0 || messageData.attachment || messageData.embedUrlAttachment || messageData.embedAuthorIconAttachment || messageData.embedFooterIconAttachment || messageData.embedThumbnailAttachment || messageData.embedImageAttachment;
+    const hasContent = messageData.content || messageData.embed || messageData.buttons.length > 0 || messageData.attachment || messageData.embedAuthorIconAttachment || messageData.embedFooterIconAttachment || messageData.embedThumbnailAttachment || messageData.embedImageAttachment;
     if (!hasContent) {
         showStatus('Le message doit contenir au moins du texte, un embed, des boutons ou une pièce jointe', 'error');
         return;
     }
 
-    // Envoyer au serveur
     socket.emit('sendMessage', messageData);
     showStatus('🚀 Envoi du message...', 'info');
 }
 
-// Réception de la confirmation
 socket.on('messageSent', (data) => {
     if (data.success) {
         showStatus('✅ Message envoyé avec succès !', 'success');
         removeAttachment('message');
-        removeAttachment('url');
         removeAttachment('authorIcon');
         removeAttachment('footerIcon');
         removeAttachment('thumbnail');
@@ -1095,7 +957,6 @@ socket.on('messageSent', (data) => {
     }
 });
 
-// Afficher un message de statut
 function showStatus(message, type) {
     const statusEl = document.getElementById('statusMessage');
     statusEl.textContent = message;
@@ -1109,7 +970,6 @@ function showStatus(message, type) {
     }
 }
 
-// Réinitialiser le formulaire
 function resetForm() {
     if (!confirm('Êtes-vous sûr de vouloir réinitialiser le formulaire ?')) {
         return;
@@ -1136,9 +996,7 @@ function resetForm() {
     renderFields();
     renderButtons();
 
-    // Réinitialiser tous les attachements
     removeAttachment('message');
-    removeAttachment('url');
     removeAttachment('authorIcon');
     removeAttachment('footerIcon');
     removeAttachment('thumbnail');

@@ -330,34 +330,50 @@ function startWebServer(client) {
                     payload.content = messageData.content;
                 }
 
+                // Traiter tous les attachments
                 try {
+                    // Attachment message simple
                     if (messageData.attachment && messageData.attachment.data) {
-                        const attachment = await dataURLToAttachment(messageData.attachment.data, messageData.attachment.name || 'attachment.png');
+                        const attachment = await dataURLToAttachment(
+                            messageData.attachment.data,
+                            messageData.attachment.name || 'attachment.png'
+                        );
                         payload.files.push(attachment);
                     }
 
-                    if (messageData.embedUrlAttachment && messageData.embedUrlAttachment.data) {
-                        const attachment = await dataURLToAttachment(messageData.embedUrlAttachment.data, messageData.embedUrlAttachment.name || 'url_image.png');
-                        payload.files.push(attachment);
-                    }
-
+                    // Attachment icône auteur
                     if (messageData.embedAuthorIconAttachment && messageData.embedAuthorIconAttachment.data) {
-                        const attachment = await dataURLToAttachment(messageData.embedAuthorIconAttachment.data, messageData.embedAuthorIconAttachment.name || 'author_icon.png');
+                        const attachment = await dataURLToAttachment(
+                            messageData.embedAuthorIconAttachment.data,
+                            messageData.embedAuthorIconAttachment.name || 'author_icon.png'
+                        );
                         payload.files.push(attachment);
                     }
 
+                    // Attachment icône footer
                     if (messageData.embedFooterIconAttachment && messageData.embedFooterIconAttachment.data) {
-                        const attachment = await dataURLToAttachment(messageData.embedFooterIconAttachment.data, messageData.embedFooterIconAttachment.name || 'footer_icon.png');
+                        const attachment = await dataURLToAttachment(
+                            messageData.embedFooterIconAttachment.data,
+                            messageData.embedFooterIconAttachment.name || 'footer_icon.png'
+                        );
                         payload.files.push(attachment);
                     }
 
+                    // Attachment thumbnail
                     if (messageData.embedThumbnailAttachment && messageData.embedThumbnailAttachment.data) {
-                        const attachment = await dataURLToAttachment(messageData.embedThumbnailAttachment.data, messageData.embedThumbnailAttachment.name || 'thumbnail.png');
+                        const attachment = await dataURLToAttachment(
+                            messageData.embedThumbnailAttachment.data,
+                            messageData.embedThumbnailAttachment.name || 'thumbnail.png'
+                        );
                         payload.files.push(attachment);
                     }
 
+                    // Attachment image principale
                     if (messageData.embedImageAttachment && messageData.embedImageAttachment.data) {
-                        const attachment = await dataURLToAttachment(messageData.embedImageAttachment.data, messageData.embedImageAttachment.name || 'image.png');
+                        const attachment = await dataURLToAttachment(
+                            messageData.embedImageAttachment.data,
+                            messageData.embedImageAttachment.name || 'image.png'
+                        );
                         payload.files.push(attachment);
                     }
                 } catch (attachError) {
@@ -369,6 +385,7 @@ function startWebServer(client) {
                     return;
                 }
 
+                // Construire l'embed
                 if (messageData.embed) {
                     const embed = new EmbedBuilder();
 
@@ -384,36 +401,56 @@ function startWebServer(client) {
                         embed.setDescription(messageData.embed.description);
                     }
 
-                    if (messageData.embed.url) {
+                    // URL du titre - NE PAS utiliser attachment:// car Discord.js ne le supporte pas pour les URLs
+                    // On utilise uniquement des URLs HTTP/HTTPS normales
+                    if (messageData.embed.url && messageData.embed.url.startsWith('http')) {
                         embed.setURL(messageData.embed.url);
                     }
 
+                    // Author avec icône
                     if (messageData.embed.author) {
-                        embed.setAuthor({
-                            name: messageData.embed.author.name,
-                            iconURL: messageData.embed.author.icon_url
-                        });
+                        const authorData = {
+                            name: messageData.embed.author.name
+                        };
+
+                        // Si l'icône de l'auteur est un attachment
+                        if (messageData.embed.author.icon_url) {
+                            authorData.iconURL = messageData.embed.author.icon_url;
+                        }
+
+                        embed.setAuthor(authorData);
                     }
 
-                    if (messageData.embed.thumbnail) {
+                    // Thumbnail
+                    if (messageData.embed.thumbnail && messageData.embed.thumbnail.url) {
                         embed.setThumbnail(messageData.embed.thumbnail.url);
                     }
 
-                    if (messageData.embed.image) {
+                    // Image principale
+                    if (messageData.embed.image && messageData.embed.image.url) {
                         embed.setImage(messageData.embed.image.url);
                     }
 
+                    // Footer avec icône
                     if (messageData.embed.footer) {
-                        embed.setFooter({
-                            text: messageData.embed.footer.text,
-                            iconURL: messageData.embed.footer.icon_url
-                        });
+                        const footerData = {
+                            text: messageData.embed.footer.text
+                        };
+
+                        // Si l'icône du footer est un attachment
+                        if (messageData.embed.footer.icon_url) {
+                            footerData.iconURL = messageData.embed.footer.icon_url;
+                        }
+
+                        embed.setFooter(footerData);
                     }
 
+                    // Timestamp
                     if (messageData.embed.timestamp) {
                         embed.setTimestamp(new Date(messageData.embed.timestamp));
                     }
 
+                    // Fields
                     if (messageData.embed.fields && messageData.embed.fields.length > 0) {
                         messageData.embed.fields.forEach(field => {
                             embed.addFields({
@@ -427,6 +464,7 @@ function startWebServer(client) {
                     payload.embeds = [embed];
                 }
 
+                // Boutons
                 if (messageData.buttons && messageData.buttons.length > 0) {
                     const row = new ActionRowBuilder();
 
@@ -458,6 +496,7 @@ function startWebServer(client) {
                     }
                 }
 
+                // Vérifier qu'il y a du contenu
                 const totalFiles = payload.files ? payload.files.length : 0;
                 if (!payload.content && (!payload.embeds || payload.embeds.length === 0) && (!payload.components || payload.components.length === 0) && totalFiles === 0) {
                     socket.emit('messageSent', { success: false, error: 'Le message est vide' });
@@ -466,6 +505,7 @@ function startWebServer(client) {
 
                 console.log(`📤 ${session.user.username} envoie un message avec ${totalFiles} fichier(s)`);
 
+                // Envoyer le message
                 await channel.send(payload);
                 socket.emit('messageSent', { success: true });
 
