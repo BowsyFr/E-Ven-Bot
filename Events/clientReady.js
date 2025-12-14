@@ -2,8 +2,6 @@ const Discord = require('discord.js');
 const { ActivityType } = Discord;
 const loadSlashCommands = require("../Loaders/loadSlashCommands");
 const { startWebServer } = require("../Web/webServer");
-const express = require('express');
-
 
 module.exports = async client => {
     try {
@@ -11,6 +9,14 @@ module.exports = async client => {
 
         console.log(`Le bot est en ligne ! ID: ${client.user.tag}`);
         startWebServer(client);
+
+        // Définir l'activité initiale
+        const guild = client.guilds.cache.first();
+        if (guild) {
+            const memberCount = guild.memberCount;
+            client.user.setActivity(`${memberCount} membres`, { type: ActivityType.Watching });
+            console.log(`📊 Activité initiale: Watching ${memberCount} membres`);
+        }
 
         // Notification initiale
         const channelId = '1430581638856708288';
