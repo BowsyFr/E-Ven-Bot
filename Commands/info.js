@@ -9,7 +9,7 @@ module.exports = {
     async run(client, message) {
         const embed = new Discord.EmbedBuilder()
             .setColor('#f5aa20') // Couleur de l'embed
-            .setTitle("🤖 Informations sur L'E-ven Bot")
+            .setTitle("🤖 Informations sur L'E-Ven Bot")
             .setDescription("Bonjour ! Je suis l'**E-Ven Bot**, le bot officiel du serveur Discord d'E-Ven Community.")
             .addFields(
                 { name: '👨‍💻 Développeur', value: `<@909874998934646855>`, inline: true }, // Mention du développeur
